@@ -6,17 +6,22 @@ require("dotenv").config();
 
 const adminRoute = require("./routes/admin.routes");
 const productRoute = require("./routes/product.routes");
+const userRoutes = require("./routes/user.routes");
+const cartRoutes = require("./routes/cart.routes");
 
 const app = express()
 
 // Middlewares
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors({origin: "http://localhost:5173", credentials: true}))
+app.use(cors({origin: ["http://localhost:5173", "http://localhost:5174"], credentials: true}));
 
 // Routes
 app.use("/admin", adminRoute);
 app.use("/admin", productRoute);
+app.use("/user", userRoutes);
+app.use("/cart", cartRoutes);
+
 
 // Database
 mongoose.connect(process.env.MONGO_URI)

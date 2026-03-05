@@ -1,6 +1,7 @@
 const productModel = require("../models/product.model");
 
 const createProduct = async (req, res) => {
+  console.log(req.files)
   try {
     if (req.user.role !== "admin") {
       return res.status(403).json({
@@ -41,14 +42,19 @@ const createProduct = async (req, res) => {
 };
 
 const fetchProduct = async (req, res)=> {
+  const search = req.query.search || "";
+  const regex = search.split("").map(l => `(?=.*${l})`).join("");
+  
   try {
-    const products = await productModel.find();
+    const products = await productModel.find({
+      title: { $regex: regex, $options: "i"},
+    });
     return res.status(200).json(products);
   } catch (err) {
     console.log(err)
     res.status(500).json({message: "Failed to fetch products"})
   }; 
-};
+}
 
 const fetchProductDetails = async (req, res) => {
   const id = req.params.id
@@ -76,7 +82,6 @@ const deleteProduct = async (req,res)=> {
   }catch (err) {
     return res.status(500).json({message: "Server error"});
   }
-  console.log(err);
 }
 
 const editProduct = async (req, res)=> {
@@ -93,4 +98,21 @@ const editProduct = async (req, res)=> {
   }
 };
 
-module.exports = { createProduct, fetchProduct, fetchProductDetails, deleteProduct, editProduct };
+const searchProducts = async (req, res)=> {
+  const search = req.query.search || "";
+
+  try {
+
+    const products = await productModel.find({
+      name: { $regex: search, $options: "i"}
+    });
+
+    return res.status(200).json(products)
+
+  } catch (err) {
+    console.log(err)
+    return res.status(500).json({message: "Server error"})
+  }
+};
+
+module.exports = { createProduct, fetchProduct, fetchProductDetails, deleteProduct, editProduct, searchProducts };

@@ -30,19 +30,19 @@ const signup =(req, res)=>{
 const login =(req, res)=> {
   const {email, password} = req.body
   adminModel.findOne({email})
-  .then((admin)=>{
-    if (!admin) {
+  .then((user)=>{
+    if (!user) {
       return res.status(401).json({message: "No user with this email found"})
     }
 
-    bcrypt.compare(password, admin.password)
+    bcrypt.compare(password, user.password)
     .then((isMatch)=>{
       if (!isMatch) {
         return res.status(403).json({message: "invalid password"})
       }
 
       const token = jwt.sign({
-        id: admin._id, firstName: admin.firstName,  email: admin.email, role: admin.role},
+        id: user._id, firstName: user.firstName,  email: user.email, role: user.role},
         process.env.JWT_SECRET,
         {expiresIn: 24 * 60 * 60 * 1000}
       );
@@ -56,7 +56,7 @@ const login =(req, res)=> {
       });
 
       return res.status(200).json(
-        {message: "Login successfuly", user: admin}
+        {message: "Login successfuly", user}
       );
 
     }).catch((err)=>{
@@ -143,6 +143,16 @@ const resetPassword = async(req, res)=> {
     return res.status(500).json({message: "Server error"})
   }
 };
+
+// FUNCTION ADD BANK ACCOUNT 
+const addAccount = (req, res) => {
+  try {
+    const user = req.user
+    const bankInfo = req.body
+  }catch(err) {
+    console.error(err)
+  }
+}
 
 // FUNCTION LOGOUT USER
 const logOut = (req, res) => {

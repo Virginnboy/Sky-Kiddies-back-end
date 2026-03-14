@@ -57,11 +57,12 @@ const login =(req, res)=> {
 
 
       res.cookie("token", token, {
-        httpOnly: true, 
-        secure: process.env.NODE_ENV === "production",
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // true on Render
         sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-        maxAge: 24 * 60 * 60 * 1000
+        maxAge: 24 * 60 * 60 * 1000 // 1 day
       });
+
 
       return res.status(200).json(
         {message: "Login successfuly", user}
@@ -164,11 +165,11 @@ const addAccount = (req, res) => {
 
 // FUNCTION LOGOUT USER
 const logOut = (req, res) => {
-  res.clearCookie("token", {
-    httpOnly: true,
-    secure: false,
-    sameSite: "Lax"
-  });
+res.clearCookie("token", {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
+});
 
   return res.status(200).json({message: "Logged out Successfully"});
 };

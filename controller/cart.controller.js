@@ -5,6 +5,10 @@ const addToCart = async(req, res)=> {
   try {
     const { productId } = req.body
     const userId = req.user?.id;
+
+    if (!userId) {
+      return res.status(401).json({message: "Please signup or login to continue shopping"})
+    }
   
     // fetch product from dataBase
     const product = await productModel.findById(productId);

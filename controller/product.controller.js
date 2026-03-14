@@ -1,7 +1,7 @@
 const productModel = require("../models/product.model");
 
 const createProduct = async (req, res) => {
-  console.log(req.files)
+  
   try {
     if (req.user.role !== "admin") {
       return res.status(403).json({

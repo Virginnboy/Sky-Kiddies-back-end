@@ -9,6 +9,14 @@ require("dotenv").config();
 const signup =(req, res)=>{
   const {email, password, firstName} = req.body
 
+  if(!email?.trim() || !password?.trim() || !firstName?.trim()) {
+    return res.status(404).json({message: "All input fields are required"})
+  }
+
+  if(password.length < 5) {
+    return res.status(404).json({message: "Password must be at least 5 characters long"})
+  }
+
   adminModel.findOne({email})
   .then((existingEmail)=>{
     if (existingEmail) {

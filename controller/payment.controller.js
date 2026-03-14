@@ -55,10 +55,8 @@ const fetchAccountById = async (req, res) => {
 }
 
 const editAccountDetails = async (req, res)=> {
-  const {accountId} = req.params.accountId
+  const {accountId} = req.params
   const { accountName, accountNumber, bankName, accountType } = req.body;
-  console.log(accountId)
-  console.log(req.body)
   try {
     const updatedAccount = await bankDetailsModel.findByIdAndUpdate(accountId, {$set:{ accountName, accountNumber, bankName, accountType }}, {new: true});
 

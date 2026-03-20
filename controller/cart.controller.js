@@ -2,9 +2,12 @@ const cartModel = require("../models/cart.model");
 const productModel = require("../models/product.model");
 
 const addToCart = async(req, res)=> {
+  console.log(req.body)
   try {
     const { productId } = req.body
+    console.log(productId)
     const userId = req.user?.id;
+    console.log(userId)
 
     if (!userId) {
       return res.status(401).json({message: "Please signup or login to continue shopping"})

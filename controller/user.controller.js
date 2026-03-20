@@ -49,7 +49,7 @@ const login = async (req, res) => {
     {expiresIn: "1d" }
   );
 
-    res.cookie("token", token, {
+    res.cookie("userToken", token, {
         httpOnly: true, 
         secure: process.env.NODE_ENV === "production",
         sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
@@ -84,15 +84,10 @@ const login = async (req, res) => {
 } 
 
 const getUser = async (req, res) => {
-  const userId = req.user.id
   try {
-    const user = await userModel.findById(userId).select("-password");
+    const user = req.user;
 
-    if (!user) {
-      return res.status(401).json({message: "Unauthorized! user not found"})
-    }
-
-    return res.status(200).json(user)
+    return res.status(200).json(user);
   }catch (err) {
     console.log(err)
     return res.status(500).json({message: "Server Error"})
@@ -174,7 +169,7 @@ const resetPassword = async (req, res) => {
 }
 
 const logOut = (req, res) => {
-  res.clearCookie("token", {
+  res.clearCookie("userToken", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",

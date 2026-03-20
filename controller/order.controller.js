@@ -160,5 +160,22 @@ const confirmOrder = async (req, res) => {
   }
 }
 
+const fetchUserOrder = async (req, res) => {
+  try {
+    const userId = req.user.id
 
-module.exports = { placeOrder, fetchOrders, fetchOrderDetails, confirmOrder }
+    const userOrder = await orderModel.find({user: userId}).populate("items.product", "title price");
+
+    if (!userOrder) {
+      return res.status(404).json({message: "Order not found"})
+    }
+
+    return res.status(200).json({userOrder})
+  }catch(err) {
+    console.log("user order error:", err)
+    return res.status(500).json({message: "Server ERROR!"})
+  }
+}
+
+
+module.exports = { placeOrder, fetchOrders, fetchOrderDetails, confirmOrder, fetchUserOrder }

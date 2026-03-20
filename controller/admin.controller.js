@@ -43,6 +43,10 @@ const login =(req, res)=> {
       return res.status(401).json({message: "No user with this email found"})
     }
 
+    if (user.role !== "admin") {
+      return res.status(401).json({message: "Only admin is allowed to use this route"})
+    }
+
     bcrypt.compare(password, user.password)
     .then((isMatch)=>{
       if (!isMatch) {
@@ -56,16 +60,16 @@ const login =(req, res)=> {
       );
 
 
-      res.cookie("token", token, {
+      res.cookie("adminToken", token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production", // true on Render
         sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-        maxAge: 24 * 60 * 60 * 1000 // 1 day
+        maxAge: 24 * 60 * 60 * 1000
       });
 
 
       return res.status(200).json(
-        {message: "Login successfuly", user}
+        {message: "Login successfuly", user, token}
       );
 
     }).catch((err)=>{
@@ -153,19 +157,10 @@ const resetPassword = async(req, res)=> {
   }
 };
 
-// FUNCTION ADD BANK ACCOUNT 
-const addAccount = (req, res) => {
-  try {
-    const user = req.user
-    const bankInfo = req.body
-  }catch(err) {
-    console.error(err)
-  }
-}
 
 // FUNCTION LOGOUT USER
 const logOut = (req, res) => {
-res.clearCookie("token", {
+res.clearCookie("adminToken", {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
   sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",

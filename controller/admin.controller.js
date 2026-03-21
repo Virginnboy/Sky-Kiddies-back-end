@@ -56,15 +56,16 @@ const login =(req, res)=> {
       const token = jwt.sign({
         id: user._id, firstName: user.firstName,  email: user.email, role: user.role},
         process.env.JWT_SECRET,
-        {expiresIn: 24 * 60 * 60 * 1000}
+        {expiresIn: "1d"}
       );
 
 
       res.cookie("adminToken", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // true on Render
-        sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-        maxAge: 24 * 60 * 60 * 1000
+        secure: true, // true on Render
+        sameSite: "None",
+        maxAge: "1d",
+        domain: ".onrender.com"
       });
 
 

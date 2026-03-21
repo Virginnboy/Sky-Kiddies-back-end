@@ -9,13 +9,15 @@ const jwt = require("jsonwebtoken")
 
 const messageModel = require("./models/message.models");
 
+const app = express();
+app.set("trust proxy", 1);
+
 const adminRoute = require("./routes/admin.routes");
 const productRoute = require("./routes/product.routes");
 const userRoutes = require("./routes/user.routes");
 const cartRoutes = require("./routes/cart.routes");
 const orderRoutes = require("./routes/order.routes");
 
-const app = express()
 const server = http.createServer(app);
 
 const allowedOrigin = [

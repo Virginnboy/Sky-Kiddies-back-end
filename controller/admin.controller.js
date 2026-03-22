@@ -64,8 +64,7 @@ const login =(req, res)=> {
         httpOnly: true,
         secure: true, // true on Render
         sameSite: "None",
-        maxAge: "1d",
-        domain: ".onrender.com"
+        maxAge: 24 * 60 * 60 * 1000,
       });
 
 

@@ -160,11 +160,11 @@ const resetPassword = async(req, res)=> {
 
 // FUNCTION LOGOUT USER
 const logOut = (req, res) => {
-res.clearCookie("adminToken", {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
-});
+  res.clearCookie("adminToken", {
+    httpOnly: true,
+    secure: true, // true on Render
+    sameSite: "None"
+  });
 
   return res.status(200).json({message: "Logged out Successfully"});
 };

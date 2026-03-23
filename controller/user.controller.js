@@ -57,19 +57,19 @@ const login = async (req, res) => {
     });
 
     try{
-      await sendEmail({
-      to: user.email,
-      subject: "SKy Kiddies Successful Login",
-      html: `
-        <h2>Dear ${user.firstName}</h2>
-        <p>You Have Loggedin successfully to Sky Kiddies on ${new Date().toLocaleString()}.</p>
-        <p>please if you do not intitiate this action, contact our customer support as your account might have been compromised.</p>
+      sendEmail({
+        to: user.email,
+        subject: "SKy Kiddies Successful Login",
+        html: `
+          <h2>Dear ${user.firstName}</h2>
+          <p>You Have Loggedin successfully to Sky Kiddies on ${new Date().toLocaleString()}.</p>
+          <p>please if you do not intitiate this action, contact our customer support as your account might have been compromised.</p>
 
 
-        
-        <p>Kind Regards,</p>
-        <p>Sky Kiddies Team</p>
-      `
+          
+          <p>Kind Regards,</p>
+          <p>Sky Kiddies Team</p>
+        `
     });
   }catch(emailError) {
     console.log("Email failed", emailError)

@@ -51,7 +51,7 @@ const placeOrder = async (req, res) => {
     await order.save();
 
     try {
-      await sendEmail({
+      sendEmail({
         to: req.user.email,
         subject: "Sky Kiddies Order Received",
         html: `

@@ -54,19 +54,20 @@ io.use((socket, next) => {
 
 // web socket connection
 io.on("connection", (socket)=> {
-  console.log("User connected", socket.user.id);
+  // console.log("User connected", socket.user.id);
   
   socket.join(socket.user.id);
 
   socket.on("send_message", async (data) => {
-    console.log(data)
+    // console.log(data)
     const message = await messageModel.create(data);
     // console.log(message)
     io.to(data.receiver).emit("receive_message", message);
+    io.to(data.sender).emit("receive_message", message);
   });
   
   socket.on("disconnect", () => {
-    // console.log("User disconnected", socket.user.id)
+    console.log("User disconnected", socket.user.id);
   });
 });
 

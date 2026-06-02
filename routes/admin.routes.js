@@ -3,7 +3,7 @@ const { signup, login, forgotPassword, logOut, resetPassword, getAuthenticated }
 // const protect = require("../middleware/auth.middleware");
 const protectAdmin = require("../middleware/admin.auth.middleware");
 const { createBankAccount, fetchAccountDetails, fetchAccountById, editAccountDetails } = require("../controller/payment.controller");
-const { getUserChats, getUserMessages } = require("../controller/message.controller");
+const { getUserChats, getUserMessages, getSenderData} = require("../controller/message.controller");
 const router = express.Router();
 
 
@@ -19,5 +19,6 @@ router.get("/get-bank-details/:accountId", protectAdmin, fetchAccountById);
 router.get("/auth-check", protectAdmin, getAuthenticated);
 router.get("/chats", protectAdmin, getUserChats);
 router.get("/message/:userId", protectAdmin, getUserMessages)
+router.get("/sender_data/:senderId", getSenderData)
 
 module.exports = router;

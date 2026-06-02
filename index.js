@@ -5,12 +5,12 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
-const jwt = require("jsonwebtoken")
+const socketSetup = require("./sockets/socket");
+const verifySocketToken = require("./sockets/socket.auth.middleware");
 
 const messageModel = require("./models/message.models");
 
 const app = express();
-app.set("trust proxy", 1);
 
 const adminRoute = require("./routes/admin.routes");
 const productRoute = require("./routes/product.routes");
@@ -35,41 +35,10 @@ const io = new Server(server, {
 });
 
 // web socket middleware 
-io.use((socket, next) => {
-  const token = socket.handshake.auth.token;
-
-  if (!token) {
-    return next(new Error("Not authenticated"));
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return next(new Error("Session expired"));
-    }
-
-    socket.user = decoded; // attach user info
-    next();
-  });
-});
+io.use(verifySocketToken);
 
 // web socket connection
-io.on("connection", (socket)=> {
-  // console.log("User connected", socket.user.id);
-  
-  socket.join(socket.user.id);
-
-  socket.on("send_message", async (data) => {
-    // console.log(data)
-    const message = await messageModel.create(data);
-    // console.log(message)
-    io.to(data.receiver).emit("receive_message", message);
-    io.to(data.sender).emit("receive_message", message);
-  });
-  
-  socket.on("disconnect", () => {
-    console.log("User disconnected", socket.user.id);
-  });
-});
+socketSetup(io)
 
 // Middlewares
 app.use(express.json())
@@ -92,14 +61,14 @@ app.use("/admin", orderRoutes);
 app.use("/user", userRoutes);
 app.use("/cart", cartRoutes);
 
-// Database
+// Database connection
 mongoose.connect(process.env.MONGO_URI)
 .then(()=>{
   console.log("mongodb connected successfully");
+  const PORT = process.env.PORT || 5000
+  
+  // Server connection
+  server.listen(PORT, () => {
+    console.log(`Server is Running on port ${PORT}`)
+  });
 }).catch(err=> console.log(err))
-
-const PORT = process.env.PORT || 5000
-
-server.listen(PORT, () => {
-  console.log(`Server is Running on port ${PORT}`)
-});

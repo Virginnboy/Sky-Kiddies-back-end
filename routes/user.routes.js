@@ -13,7 +13,7 @@ router.post("/signup", signup);
 router.post("/login", login);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
-router.post("/logout", protectUser, logOut);
+router.post("/logout", logOut);
 router.get("/products", fetchProduct);
 router.get("/product-details/:id", fetchProductDetails);
 router.get("/me", protectUser, getUser);

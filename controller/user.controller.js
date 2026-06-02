@@ -51,29 +51,29 @@ const login = async (req, res) => {
 
     res.cookie("userToken", token, {
         httpOnly: true,
-        secure: true, // true on Render
+        secure: process.env.NODE_ENV === "production", // true on Render
         sameSite: "None",
         maxAge: 24 * 60 * 60 * 1000,
     });
 
-  //   try{
-  //     sendEmail({
-  //       to: user.email,
-  //       subject: "SKy Kiddies Successful Login",
-  //       html: `
-  //         <h2>Dear ${user.firstName}</h2>
-  //         <p>You Have Loggedin successfully to Sky Kiddies on ${new Date().toLocaleString()}.</p>
-  //         <p>please if you do not intitiate this action, contact our customer support as your account might have been compromised.</p>
+    try{
+      sendEmail({
+        to: user.email,
+        subject: "SKy Kiddies Successful Login",
+        html: `
+          <h2>Dear ${user.firstName}</h2>
+          <p>You Have Loggedin successfully to Sky Kiddies on ${new Date().toLocaleString()}.</p>
+          <p>please if you do not intitiate this action, contact our customer support as your account might have been compromised.</p>
 
 
           
-  //         <p>Kind Regards,</p>
-  //         <p>Sky Kiddies Team</p>
-  //       `
-  //   });
-  // }catch(emailError) {
-  //   console.log("Email failed", emailError)
-  // }
+          <p>Kind Regards,</p>
+          <p>Sky Kiddies Team</p>
+        `
+    });
+  }catch(emailError) {
+    console.log("Email failed", emailError)
+  }
 
     return res.status(200).json({message: "Logged in successfully", user, token})
 
@@ -99,32 +99,34 @@ const forgotPassword = async (req, res) => {
   try {
     const user =await userModel.findOne({email})
 
-    if(!user) {
-      return res.status(409).json({message: "No user with the email provided found"})
+    if (user) {
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  
+      user.resetPasswordToken = hashedToken;
+      user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
+  
+      await user.save();
+  
+      const resetLink = `http://localhost:5174/reset-password/${resetToken}`
+  
+        sendEmail({
+          to: user.email,
+          subject: "Password Reset Request",
+          html: `
+            <h2>Password Reset</h2>
+            <p>You requested to reset your password.</p>
+            <p>Click the link below to continue:</p>
+            <a href="${resetLink}">${resetLink}</a>
+            <p>This link expires in 15 minutes.</p>
+          `
+        }).catch ((emailError)=> {
+          console.log("Email sending failed",emailError)
+        });
     }
 
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
-
-    user.resetPasswordToken = hashedToken;
-    user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
-
-    await user.save();
-
-    const resetLink = `http://localhost:5174/reset-password/${resetToken}`
-    await sendEmail({
-      to: user.email,
-      subject: "Password Reset Request",
-      html: `
-        <h2>Password Reset</h2>
-        <p>You requested to reset your password.</p>
-        <p>Click the link below to continue:</p>
-        <a href="${resetLink}">${resetLink}</a>
-        <p>This link expires in 15 minutes.</p>
-      `
-    });
-
     return res.status(200).json({message: "Reset password link has been sent to your email"})
+
   }catch(err) {
     return res.status(500).json({message: "Server Error"})
   }

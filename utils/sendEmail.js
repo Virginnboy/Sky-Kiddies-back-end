@@ -1,21 +1,15 @@
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 require("dotenv").config();
 
-const sendEmail = ({to, subject, html })=> {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL_ADMIN,
-      pass: process.env.EMAIL_PASS
-    }
-  });
+const resend = new Resend(process.env.RESEND_API_KEY)
 
-  return transporter.sendMail({
-    from: `"SKY KIDDIES" ${process.env.EMAIL_ADMIN}`,
+const sendEmail = async ({ to, subject, html }) => {
+  return await resend.emails.send({
+    from: "SKY KIDDIES <onboarding@resend.dev>",
     to,
     subject,
     html
   });
 };
 
-module.exports = sendEmail
+module.exports = sendEmail;

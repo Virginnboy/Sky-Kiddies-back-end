@@ -93,36 +93,35 @@ const forgotPassword = async (req, res) => {
     const { email } = req.body;
 
     const admin = await adminModel.findOne({ email });
-    if (!admin) {
-      return res.status(409).json({ message: "No user found with the email provided" });
-    }
 
     // Generate reset token
-    const resetToken = crypto.randomBytes(32).toString("hex");
-    const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+    if (admin) {
+      const resetToken = crypto.randomBytes(32).toString("hex");
+      const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
 
-    // Save token and expiry in DB
-    admin.resetPasswordToken = hashedToken;
-    admin.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
-    await admin.save();
+      // Save token and expiry in DB
+      admin.resetPasswordToken = hashedToken;
+      admin.resetPasswordExpires = Date.now() + 15 * 60 * 1000; // 15 minutes
+      await admin.save();
 
-    // 4️⃣ Create reset link
-    const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+      // 4️⃣ Create reset link
+      const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
 
-    // Send email
-    await sendEmail({
-      to: admin.email,
-      subject: "Password Reset Request",
-      html: `
-        <h2>Password Reset</h2>
-        <p>You requested to reset your password.</p>
-        <p>Click the link below to continue:</p>
-        <a href="${resetLink}">${resetLink}</a>
-        <p>This link expires in 15 minutes.</p>
-      `
-    });
+      // Send email
+      sendEmail({
+        to: admin.email,
+        subject: "Password Reset Request",
+        html: `
+          <h2>Password Reset</h2>
+          <p>You requested to reset your password.</p>
+          <p>Click the link below to continue:</p>
+          <a href="${resetLink}">${resetLink}</a>
+          <p>This link expires in 15 minutes.</p>
+        `
+      }).then(console.log).catch(console.log);
+    }
 
-    res.status(200).json({ message: "Password reset link sent to your registered email" });
+    res.status(200).json({ message: "If this email exists, a reset link has been sent" });
 
   } catch (err) {
     console.log(err);

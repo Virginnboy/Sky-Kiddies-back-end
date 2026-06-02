@@ -43,12 +43,16 @@ socketSetup(io)
 // Middlewares
 app.use(express.json())
 app.use(cookieParser())
-app.use(cors(
-  {
-    origin: allowedOrigin,
-    credentials: true
-  }
-));
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigin.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true
+}));
 
 app.get("/", (req, res) => {
   res.send("API is running");

@@ -21,9 +21,9 @@ const orderRoutes = require("./routes/order.routes");
 const server = http.createServer(app);
 
 const allowedOrigin = [
-      "http://localhost:5173", 
-      "http://localhost:5174", 
-      "https://sky-kiddies-admin.onrender.com", 
+      // "http://localhost:5173", 
+      // "http://localhost:5174", 
+      // "https://sky-kiddies-admin.onrender.com", 
       "https://sky-kiddies-client-end.onrender.com"
     ]
 

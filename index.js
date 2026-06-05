@@ -45,11 +45,14 @@ app.use(express.json())
 app.use(cookieParser())
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigin.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigin.includes(origin)) {
+      return callback(null, true);
     }
+
+    console.log("Blocked CORS origin:", origin);
+    return callback(null, true); // TEMP allow for debugging
   },
   credentials: true
 }));
@@ -63,7 +66,6 @@ app.use("/admin", adminRoute);
 app.use("/admin", productRoute);
 app.use("/admin", orderRoutes);
 app.use("/user", userRoutes);
-app.use("/user", productRoutes);
 app.use("/cart", cartRoutes);
 
 // Database connection

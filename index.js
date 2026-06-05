@@ -63,6 +63,7 @@ app.use("/admin", adminRoute);
 app.use("/admin", productRoute);
 app.use("/admin", orderRoutes);
 app.use("/user", userRoutes);
+app.use("/user", productRoutes);
 app.use("/cart", cartRoutes);
 
 // Database connection

@@ -27,10 +27,11 @@ const allowedOrigin = [
       "https://sky-kiddies-client-end.onrender.com"
     ]
 
-    // web socket io server and cors origin
+// web socket io server and cors origin
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigin
+    origin: allowedOrigin,
+    credentials: true
   }
 });
 
@@ -41,8 +42,6 @@ io.use(verifySocketToken);
 socketSetup(io)
 
 // Middlewares
-app.use(express.json())
-app.use(cookieParser())
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
@@ -52,10 +51,13 @@ app.use(cors({
     }
 
     console.log("Blocked CORS origin:", origin);
-    return callback(null, true); // TEMP allow for debugging
+    return callback(new Error("Not allowed by CORS")); // TEMP allow for debugging
   },
   credentials: true
 }));
+
+app.use(express.json())
+app.use(cookieParser())
 
 app.get("/", (req, res) => {
   res.send("API is running");

@@ -1,83 +1,41 @@
-const express = require("express");
 const http = require("http");
-const { Server } = require("socket.io");
 const mongoose = require("mongoose");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
 require("dotenv").config();
-const socketSetup = require("./sockets/socket");
-const verifySocketToken = require("./sockets/socket.auth.middleware");
 
-const messageModel = require("./models/message.models");
+const { app, allowedOrigin } = require("./app");
+const socketServer = require("./sockets/socket.config");
 
-const app = express();
+const server = http.createServer(app); 
 
-const adminRoute = require("./routes/admin.routes");
-const productRoute = require("./routes/product.routes");
-const userRoutes = require("./routes/user.routes");
-const cartRoutes = require("./routes/cart.routes");
-const orderRoutes = require("./routes/order.routes");
-
-const server = http.createServer(app);
-
-const allowedOrigin = [
-      "http://localhost:5173", 
-      "http://localhost:5174", 
-      "https://sky-kiddies-admin.onrender.com", 
-      "https://sky-kiddies-client-end.onrender.com"
-    ]
-
-// web socket io server and cors origin
-const io = new Server(server, {
-  cors: {
-    origin: allowedOrigin,
-    credentials: true
-  }
+// Handle Global UNHANDLED REJECTION
+// [ 1)Synchronous
+process.on("uncaughtException", err=> {
+  console.error(`Error Name: ${err.name}, Error Message: ${err.message}`);
+  process.exit(1);
 });
 
-// web socket middleware 
-io.use(verifySocketToken);
+// 2)Asynchronous
+process.on("unhandledRejection", (err)=> {
+  console.error(`Error Name: ${err.name}, Error Message: ${err.message}`);
+  console.log("UNHANDLED REJECTION! Shutting down server.....");
 
-// web socket connection
-socketSetup(io)
-
-// Middlewares
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigin.includes(origin)) {
-      return callback(null, true);
-    }
-
-    console.log("Blocked CORS origin:", origin);
-    return callback(new Error("Not allowed by CORS")); // TEMP allow for debugging
-  },
-  credentials: true
-}));
-
-app.use(express.json())
-app.use(cookieParser())
-
-app.get("/", (req, res) => {
-  res.send("API is running");
+    server.close(()=> {
+      process.exit(1);
+    });
 });
+// ]
 
-// Routes
-app.use("/admin", adminRoute);
-app.use("/admin", productRoute);
-app.use("/admin", orderRoutes);
-app.use("/user", userRoutes);
-app.use("/cart", cartRoutes);
+// io server connection
+socketServer(server, allowedOrigin);
 
 // Database connection
-mongoose.connect(process.env.MONGO_URI)
-.then(()=>{
+mongoose.connect(process.env.MONGO_URI).then(()=>{
   console.log("mongodb connected successfully");
-  const PORT = process.env.PORT || 5000
-  
-  // Server connection
-  server.listen(PORT, () => {
-    console.log(`Server is Running on port ${PORT}`)
-  });
-}).catch(err=> console.log(err))
+});
+
+// Server connection
+const PORT = process.env.PORT || 5000;
+
+server.listen(PORT, () => {
+  console.log(`Server is Running on port ${PORT}`)
+});

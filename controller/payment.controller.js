@@ -1,11 +1,13 @@
 const bankDetailsModel = require("../models/bankAccount.model");
+const AppError = require("../errors/AppError");
+const catchAsync = require("../utils/catchAsync");
 
-const createBankAccount = async (req, res) => {
-  try {
+const createBankAccount = catchAsync(async (req, res, next) => {
+
     const { accountName, accountNumber, bankName, accountType } = req.body;
     
     if (!accountName || !accountNumber || !bankName || !accountType) {
-      return res.status(400).json({ message: "All fields are required" });
+      return next("All fields are required", 400)
     }
 
     let newAccountDetails = new bankDetailsModel.create({
@@ -14,61 +16,50 @@ const createBankAccount = async (req, res) => {
 
     await newAccountDetails.save();
 
-    return res.status(200).json({
+    return res.status(201).json({
+      status: "Success",
       message: "Payment info saved successfully", 
-      newAccountDetails
+      data: newAccountDetails
     });
+});
 
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
+const fetchAccountDetails = catchAsync(async (req, res, next)=> {
+    const bankDetails = await bankDetailsModel.find();
 
-const fetchAccountDetails = async (req, res)=> {
-  try {
-    const bankDetails = await bankDetailsModel.find()
+    if(!bankDetails) return next(new AppError("Bank details not found", 404));
 
     return res.status(200).json(bankDetails);
+});
 
-  }catch(err) {
-    console.error(err)
-  }
-
-}
-
-const fetchAccountById = async (req, res) => {
+const fetchAccountById = catchAsync(async (req, res, next) => {
   const accountId = req.params.accountId
 
-  try {
     const accountDetails = await bankDetailsModel.findById({_id: accountId})
 
     if (!accountDetails) {
-      return res.status(404).json({message: "Account not found"})
+      return next(new AppError("Account not found", 404));
     }
 
-    return res.status(200).json(accountDetails)
-  }catch (err) {
-    console.log(err)
-    return res.status(500).json({message: "Server Error"})
-  }
-}
+    return res.status(200).json({
+      status: "Success",
+      data: accountDetails
+  });
+});
 
-const editAccountDetails = async (req, res)=> {
+const editAccountDetails = catchAsync(async (req, res, next)=> {
   const {accountId} = req.params
   const { accountName, accountNumber, bankName, accountType } = req.body;
-  try {
     const updatedAccount = await bankDetailsModel.findByIdAndUpdate(accountId, {$set:{ accountName, accountNumber, bankName, accountType }}, {new: true});
 
     if (!updatedAccount) {
-      return res.status(400).json({message: "Account not found"})
+      return next(new AppError("Account not found", 404));
     }
 
-    return res.status(200).json({message: "Account updated successfully", updatedAccount})
-  }catch(err) {
-    console.log(err)
-    return res.status(500).json({message: "Server error"})
-  }
-}
+    return res.status(200).json({
+      status: "Success",
+      message: "Account updated successfully", 
+      data: updatedAccount
+    })
+})
 
 module.exports = { createBankAccount, fetchAccountDetails, fetchAccountById, editAccountDetails };

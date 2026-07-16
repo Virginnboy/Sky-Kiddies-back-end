@@ -1,91 +1,88 @@
 const { adminModel } = require("../models/admin.model");
+const catchAsync = require("../utils/catchAsync");
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 const sendEmail = require("../utils/sendEmail");
+const AppError = require("../errors/AppError");
 require("dotenv").config();
 
 // FUNCTION SIGNUP
-const signup =(req, res)=>{
-  const {email, password, firstName} = req.body
+const signup =catchAsync(async(req, res, next)=>{
+  const { email, password, firstName } = req.body;
 
-  if(!email?.trim() || !password?.trim() || !firstName?.trim()) {
-    return res.status(404).json({message: "All input fields are required"})
+  if (!email?.trim() || !password?.trim()) {
+    return next(new AppError("email or password required", 400));
   }
 
-  if(password.length < 5) {
-    return res.status(404).json({message: "Password must be at least 5 characters long"})
+  const existingEmail = await adminModel.findOne({email});
+
+  if (existingEmail) {
+    return next(new AppError("user with this email already exist", 400));
   }
 
-  adminModel.findOne({email})
-  .then((existingEmail)=>{
-    if (existingEmail) {
-      return res.status(409).json({message: "User with this email already exist"})
-    }
-    let newAdmin = new adminModel({email, password, firstName})
+  const newUser = await adminModel.create({
+    email,
+    password,
+    firstName
+  });
 
-    return newAdmin.save()
+  res.status(201).json({
+    status: "success",
+    message: "Created successfully",
+    data: newUser
   })
-    .then(()=>{
-    return res.status(201).json({message: "sign up successfully"})
-  }).catch((error)=>{
-    console.log(error)
-    return res.status(500).json({message: "sign up failed, An error occured"})
-  })
-}
+});
 
 // FUNCTION LOGIN
-const login =(req, res)=> {
+const login =catchAsync(async(req, res, next)=> {
   const {email, password} = req.body
-  adminModel.findOne({email})
-  .then((user)=>{
-    if (!user) {
-      return res.status(401).json({message: "No user with this email found"})
-    }
 
-    if (user.role !== "admin") {
-      return res.status(401).json({message: "Only admin is allowed to use this route"})
-    }
+  if (!email?.trim() || !password?.trim()) {
+  return next(new AppError("Email and password are required", 400));
+}
 
-    bcrypt.compare(password, user.password)
-    .then((isMatch)=>{
-      if (!isMatch) {
-        return res.status(403).json({message: "invalid password"})
-      }
+  const user = await adminModel.findOne({email}).select("+password");
 
-      const token = jwt.sign({
-        id: user._id, 
-        firstName: user.firstName,  
-        email: user.email, 
-        role: user.role
-      },
-        process.env.JWT_SECRET,
-        {expiresIn: "1d"}
-      );
+  if (!user) {
+    return next(new AppError("User does not exist please signup to continue", 401));
+  }
 
+  if (user.role !== "admin") {
+    return res.status(401).json({message: "Only admin is allowed to use this route"})
+  }
 
-      res.cookie("adminToken", token, {
-        httpOnly: true,
-        secure: true, // true on Render
-        sameSite: "None",
-        maxAge: 24 * 60 * 60 * 1000,
-      });
+  const isMatch = await bcrypt.compare(password, user.password);
+
+  if (!isMatch) {
+    return next(new AppError("Invalid Password", 403));
+  }
+
+  const token = jwt.sign({
+    id: user._id, 
+    firstName: user.firstName,  
+    email: user.email, 
+    role: user.role
+  },
+    process.env.JWT_SECRET,
+    {expiresIn: "1d"}
+  );
 
 
-      return res.status(200).json(
-        {message: "Login successfuly", user, token}
-      );
-
-    }).catch((err)=>{
-      console.log("bcrypt error", err)
-      return res.status(500).json({message: "Server error"})
-    });
-
-  }).catch((err)=>{
-    console.error("Server error", err)
-    return res.status(500).json({message: "Server error"})
+  res.cookie("adminToken", token, {
+    httpOnly: true,
+    secure: true, // true on Render
+    sameSite: "None",
+    maxAge: 24 * 60 * 60 * 1000,
   });
-};
+
+  res.status(200).json({
+      message: "Login successfuly", 
+      user, 
+      token
+    });
+});
 
 // FUNCTION FORGOT PASSWORD
 const forgotPassword = async (req, res) => {
@@ -105,20 +102,29 @@ const forgotPassword = async (req, res) => {
       await admin.save();
 
       // 4️⃣ Create reset link
-      const resetLink = `http://localhost:5173/reset-password/${resetToken}`;
+      const adminUrl = process.env.ADMIN_URL || "http://localhost:5173"
+      const resetLink = `${adminUrl}/reset-password/${resetToken}`;
 
       // Send email
-      sendEmail({
-        to: admin.email,
-        subject: "Password Reset Request",
-        html: `
-          <h2>Password Reset</h2>
-          <p>You requested to reset your password.</p>
-          <p>Click the link below to continue:</p>
-          <a href="${resetLink}">${resetLink}</a>
-          <p>This link expires in 15 minutes.</p>
-        `
-      }).then(console.log).catch(console.log);
+      try {
+        await sendEmail({
+          to: admin.email,
+          subject: "Password Reset Request",
+          html: `
+            <h2>Password Reset</h2>
+            <p>You requested to reset your password.</p>
+            <p>Click the link below to continue:</p>
+            <a href="${resetLink}">${resetLink}</a>
+            <p>This link expires in 15 minutes.</p>
+          `
+        });
+      }catch (emailError) {
+        console.log("Error sending email", emailError);
+        return res.status(500).json({
+          status: "fail",
+          message: "Could not send reset email. please try again later"
+        })
+      }
     }
 
     res.status(200).json({ message: "If this email exists, a reset link has been sent" });
@@ -133,8 +139,6 @@ const forgotPassword = async (req, res) => {
 const resetPassword = async(req, res)=> {
   const { token } = req.params
   const { newPassword } = req.body
-  console.log(token)
-  console.log(newPassword)
   
   // Hash token
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
@@ -152,7 +156,24 @@ const resetPassword = async(req, res)=> {
     
     await admin.save();
 
-    return res.status(200).json({message: "Password reset successfully! Login now"})
+    try {
+      await sendEmail({
+        to: admin.email,
+        subject: "Password Reset Successful",
+        html: `
+          <h2>Dear ${user.firstName}</h2>
+          <p>Your password has been successfully reset</p>
+          <p>if you did not initiate this action please contact our support team immediatelly for your account might have been compromized</p>
+
+          <b>Kind Regards</b>
+          <p>Sky Kiddies</p>
+        `
+      })
+    }catch (emailError) {
+      console.log(emailError)
+    }
+
+    res.status(200).json({message: "Password reset successfully! Login now"})
 
   } catch (err) {
     console.log(err);

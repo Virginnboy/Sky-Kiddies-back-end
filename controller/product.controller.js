@@ -28,7 +28,7 @@ const createProduct = async (req, res) => {
 
     return res.status(201).json({
       message: "Uploaded successfully",
-      product: newProduct
+      newProduct
     });
 
   } catch (err) {

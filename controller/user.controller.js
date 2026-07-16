@@ -1,43 +1,56 @@
 const { userModel } = require("../models/user.model");
 const sendEmail = require("../utils/sendEmail");
+const catchAsync = require("../utils/catchAsync");
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const dotenv = require("dotenv");
 const crypto = require("crypto");
-dotenv.config();
+const AppError = require("../errors/AppError");
 
-const signup = async (req, res) => {
+require("dotenv").config();
+
+// FUNCTION SIGNUP
+const signup = catchAsync(async (req, res, next) => {
   const {email, password, firstName} = req.body
-  console.log(req.body)
-  try {
+
+  if (!email?.trim || !password?.trim() || !firstName?.trim) {
+    return next(new AppError("All fields are required", 400));
+  }
+
   const user = await userModel.findOne({email});
 
   if (user) {
-    return res.status(409).json({message: "User with this email already exist"});
+    return next(new AppError("User with this email already exist", 400));
   }
 
   const newUser = new userModel({email, password, firstName})
 
   await newUser.save();
 
-  res.status(201).json({message: "Signup successful"})
-  
-  }catch (err) {
-    console.log(err)
-    return res.status(500).json({message: "Server error"})
-  }
-}
+  res.status(201).json({
+    status: "success",
+    data: newUser,
+    message: "Signup successful"
+  });
+});
 
-const login = async (req, res) => {
-  const { email, password } = req.body 
-  try {
+
+// LOGIN FUNCTION
+const login = catchAsync(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  if (!email?.trim() || !password?.trim()) {
+    return next(new AppError("Email and Password are required", 400));
+  }
+
     const user = await userModel.findOne({email});
     if (!user) {
-      return res.status(401).json({message: "User not found"})
+      return next(new AppError("No user with this email found", 400))
     }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(403).json({message: "Invalid Password"})
+      return next(new AppError("Invalid password", 401));
     }
 
     const token = jwt.sign({
@@ -51,13 +64,13 @@ const login = async (req, res) => {
 
     res.cookie("userToken", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // true on Render
-        sameSite: "None",
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production"? "None" : "Lax",
         maxAge: 24 * 60 * 60 * 1000,
     });
 
-    try{
-      sendEmail({
+    try {
+      await sendEmail({
         to: user.email,
         subject: "SKy Kiddies Successful Login",
         html: `
@@ -70,19 +83,20 @@ const login = async (req, res) => {
           <p>Kind Regards,</p>
           <p>Sky Kiddies Team</p>
         `
+      });
+    }catch(err) {
+      console.error("Login email failed:", err.message);
+    }
+
+    res.status(200).json({
+      message: "Logged in successfully", 
+      user,
+      token
     });
-  }catch(emailError) {
-    console.log("Email failed", emailError)
-  }
+});
 
-    return res.status(200).json({message: "Logged in successfully", user, token})
 
-  } catch (err) {
-    console.log(err)
-    return res.status(500).json({message: "Server Error"});
-  }
-} 
-
+// AUTHENTICATE USER
 const getUser = async (req, res) => {
   try {
     const user = req.user;
@@ -107,9 +121,11 @@ const forgotPassword = async (req, res) => {
       user.resetPasswordExpires = Date.now() + 15 * 60 * 1000;
   
       await user.save();
+      
+      const userUrl = process.env.USER_URL || "http://localhost:5174"
+      const resetLink = `${userUrl}/reset-password/${resetToken}`
   
-      const resetLink = `http://localhost:5174/reset-password/${resetToken}`
-  
+      try {
         sendEmail({
           to: user.email,
           subject: "Password Reset Request",
@@ -120,9 +136,14 @@ const forgotPassword = async (req, res) => {
             <a href="${resetLink}">${resetLink}</a>
             <p>This link expires in 15 minutes.</p>
           `
-        }).catch ((emailError)=> {
-          console.log("Email sending failed",emailError)
         });
+      }catch(emailError) {
+        console.error("Error sending email:", emailError)
+        return res.status(500).json({
+          status: "fail",
+          message: "Could not send the reset email link. Please try again later"
+        })
+      }
     }
 
     return res.status(200).json({message: "Reset password link has been sent to your email"})
@@ -134,7 +155,7 @@ const forgotPassword = async (req, res) => {
 
 const resetPassword = async (req, res) => {
   const { token } = req.params
-  console.log(token)
+
   const {newPassword} = req.body
   const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
   try {

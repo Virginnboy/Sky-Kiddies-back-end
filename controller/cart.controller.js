@@ -1,23 +1,21 @@
+const AppError = require("../errors/AppError");
 const cartModel = require("../models/cart.model");
 const productModel = require("../models/product.model");
+const catchAsync = require("../utils/catchAsync");
 
-const addToCart = async(req, res)=> {
-  console.log(req.body)
-  try {
+const addToCart = catchAsync(async(req, res, next)=> {
     const { productId } = req.body
-    console.log(productId)
     const userId = req.user?.id;
-    console.log(userId)
 
     if (!userId) {
-      return res.status(401).json({message: "Please signup or login to continue shopping"})
+      return next(new AppError("Please signup or login to continue shopping", 401))
     }
   
     // fetch product from dataBase
     const product = await productModel.findById(productId);
   
     if (!product) {
-      return res.status(404).json({message: "Product not found"})
+      return next(new AppError("Product not found", 404))
     }
 
   //Set default quantity
@@ -25,7 +23,7 @@ const addToCart = async(req, res)=> {
 
   // check if stock is enough
   if (product.quantity < quantity) {
-    return res.status(400).json({ message: "Out of stock" });
+    return next("Out of stock", 404)
   }
   
     // find user's cart
@@ -54,16 +52,13 @@ const addToCart = async(req, res)=> {
       await cart.save()
     }
 
-    return res.status(200).json({message: "Added to cart Succefully", cart})
-    
-  }catch (err) {
-    console.log(err)
-    return res.status(500).json({message: "Server Error"})
-  }
-};
+    res.status(200).json({
+      message: "Added to cart Succefully", 
+      cart
+    });
+});
 
-const fetchCart = async (req, res) => {
-  try {
+const fetchCart = catchAsync(async (req, res, next) => {
     const userId = req.user?.id; 
     const cart = await cartModel.findOne({ user: userId }).populate("items.product");
 
@@ -81,15 +76,9 @@ const fetchCart = async (req, res) => {
     }
 
     return res.status(200).json(cart);
+});
 
-  } catch (err) {
-    console.log(err); 
-    return res.status(500).json({ message: "Server Error" });
-  }
-};
-
-const removeCart = async (req, res) => {
-  try {
+const removeCart = catchAsync(async (req, res, next) => {
     const userId = req.user.id
     const {id} = req.params
 
@@ -99,17 +88,15 @@ const removeCart = async (req, res) => {
       {new: true}
     )
     if (!updatedCart) {
-      return res.status(404).json({message: "Item not found"})
+      return next(new AppError("Item not found", 404))
     }
-    return res.status(200).json({message: "Product removed from cart"})
-  }catch (err) {
-    console.log(err)
-    return res.staus(500).json({message: "Server Error"})
-  }
-}
+    return res.status(200).json({
+      status: "success",
+      message: "Product removed from cart"
+    });
+});
 
-const updateQuantity = async (req, res) => {
-  try {
+const updateQuantity = catchAsync(async (req, res, next) => {
     const userId = req.user.id
     const { id } = req.params
     const { quantity } = req.body
@@ -121,14 +108,13 @@ const updateQuantity = async (req, res) => {
     );
 
     if (!updatedCart) {
-      return res.status(404).json({message: "Item not found"})
+      return next(new AppError("Item not found", 404));
     }
 
-    return res.status(200).json({message: "Quantity updated"})
-  }catch (err) {
-    console.log(err);
-    return res.status(500).json({message: "Server Error"})
-  }
-}
+    return res.status(200).json({
+      status: "success",
+      message: "Quantity updated"
+    })
+});
 
 module.exports= { addToCart, fetchCart, removeCart, updateQuantity }

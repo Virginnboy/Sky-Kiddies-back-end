@@ -3,7 +3,11 @@ const bcrypt = require("bcrypt")
 
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { 
+    type: String, 
+    required: true,
+    minlength: [8, "Password must be at least 8 characters"]
+  },
   firstName: { type: String, required: true},
   resetPasswordToken: {type: String },
   resetPasswordExpires: {type: Date}
@@ -17,9 +21,10 @@ userSchema.pre("save", async function() {
     this.password = hashedPassword;
 
   } catch (err) {
-    console.error(err)
+    console.error(err);
+    throw err;
   }
-})
+});
 
 const userAddressSchema = new mongoose.Schema({
   user: {type: mongoose.Schema.Types.ObjectId, ref: "User", required: true},

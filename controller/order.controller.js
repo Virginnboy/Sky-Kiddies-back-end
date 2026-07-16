@@ -1,31 +1,31 @@
 const orderModel = require("../models/order.model");
 const cartModel = require("../models/cart.model");
+const AppError = require("../errors/AppError");
 const sendEmail = require("../utils/sendEmail");
+const catchAsync = require("../utils/catchAsync");
 
 
-const placeOrder = async (req, res) => {
-
-  try {
+const placeOrder = catchAsync(async (req, res, next) => {
     const userId = req.user.id
     const { fullName, address, phone, paymentMethod } = req.body
     
     if (!req.file) {
-      return res.status(400).json({message: "Payment receipt requred"});
+      return next(new AppError("Payment receipt requred", 400));
     }
     const receipt = req.file.path
 
     if (!fullName?.trim() || !address.trim() || !phone.trim() || !paymentMethod) {
-      return res.status(400).json({message: "All input fields are required"})
+      return next(new AppError("All input fields are required", 400))
     }
 
     if (phone.length < 11 || phone.length > 14) {
-      return res.status(400).json({message: "Invalid phone number"})
+      return next(new AppError("Invalid phone number", 400));
     }
 
     const cart = await cartModel.findOne({user:userId}).populate("items.product")
 
     if(!cart || cart.items.length === 0) {
-      return res.status(404).json({message: "Cart is empty"})
+      return next(new AppError("Cart is empty", 404));
     }
 
     const cartSummarry = cart.items.reduce((total, item)=> {
@@ -69,68 +69,59 @@ const placeOrder = async (req, res) => {
         `
       });
     }catch(emailError) {
-      console.log(emailError)
+      console.log(emailError);
     }
 
     cart.items = [];
 
     await cart.save();
 
-    return res.status(200).json({message: "Order placed successfully", order})
+    return res.status(200).json({
+      status: "Success",
+      message: "Order placed successfully", 
+      data: order
+    });
+});
 
-  }catch(err) {
-    console.log(err)
-    return res.status(500).json({message: "Server Error"})
+const fetchOrders = catchAsync(async (req, res, next) => {
+  const order =await orderModel.find()
+  .populate("user", "email firstName")
+  .populate("items.product", "price title").sort({createdAt: -1})
+
+  return res.status(200).json({
+    status: "Success",
+    order
+  });
+});
+
+const fetchOrderDetails = catchAsync(async (req, res, next) => {
+  const { orderId } = req.params;
+
+  const order = await orderModel.findById(orderId)
+  .populate("user", "email firstName")
+  .populate("items.product")
+
+  if(!order) {
+    return next(new AppError("Order Not Found", 404));
   }
-}
 
-const fetchOrders = async (req, res) => {
-  try {
-    const order =await orderModel.find()
-    .populate("user", "email firstName")
-    .populate("items.product", "price title")
+  return res.status(200).json({
+    status: "Success",
+    order
+  });
+});
 
-
-    return res.status(200).json({order});
-
-  }catch(err) {
-    console.log(err)
-    return res.status(500).json({message: "Server ERROR"})
-  }
-}
-
-const fetchOrderDetails = async (req, res) => {
-  try {
-    const { orderId } = req.params;
-
-    const order = await orderModel.findById(orderId)
-    .populate("user", "email firstName")
-    .populate("items.product")
-
-    if(!order) {
-      return res.status(404).json({message: "Order Not Found"})
-    }
-
-    return res.status(200).json({order});
-
-  }catch(err) {
-    console.log(err) 
-    return res.status(500).json({message: "Server ERROR"})
-  }
-}
-
-const confirmOrder = async (req, res) => {
-  try {
+const confirmOrder = catchAsync(async (req, res, next) => {
     const { orderId } = req.params;
     const { status } = req.body;
 
     const order = await orderModel.findById(orderId).populate("user", "firstName email")
     if (!order) {
-      return res.status(404).json({message: "Order not found"});
+      return next(new AppError("Order not found", 404));
     }
 
     if (order.status === "Confirmed") {
-      return res.status(400).json({message: "Order has already been confimed"});
+      return next(new AppError("Order has already been confimed", 400));
     }
 
     order.status = status;
@@ -152,30 +143,23 @@ const confirmOrder = async (req, res) => {
       console.log("Error sending confirmation email:", emailError)
     }
 
-    return res.status(200).json({message: "Order has been confirmed", order});
+    return res.status(200).json({
+      status: "Success",
+      message: "Order has been confirmed", 
+      order
+    });
+});
 
-  }catch (err) {
-    console.log(err)
-    return res.status(500).json({message: "Server ERROR"})
-  }
-}
-
-const fetchUserOrder = async (req, res) => {
-  try {
+const fetchUserOrder = catchAsync(async (req, res, next) => {
     const userId = req.user.id
 
     const userOrder = await orderModel.find({user: userId}).populate("items.product", "title price");
 
     if (!userOrder) {
-      return res.status(404).json({message: "Order not found"})
+      return next(new AppError("Order not found", 404));
     }
 
     return res.status(200).json({userOrder})
-  }catch(err) {
-    console.log("user order error:", err)
-    return res.status(500).json({message: "Server ERROR!"})
-  }
-}
-
+  });
 
 module.exports = { placeOrder, fetchOrders, fetchOrderDetails, confirmOrder, fetchUserOrder }

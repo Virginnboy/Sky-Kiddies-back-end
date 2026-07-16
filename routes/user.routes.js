@@ -1,13 +1,15 @@
 const express = require("express");
 const { signup, login, logOut, getUser, forgotPassword, resetPassword } = require("../controller/user.controller");
 const { fetchProduct, fetchProductDetails } = require("../controller/product.controller"); 
-// const protect = require("../middleware/auth.middleware");
+
 const protectUser = require("../middleware/user.auth.middleware");
-const  orderUpload  = require("../middleware/orderUpload.middleware");
+const  uploadFile  = require("../middleware/uploadFile.middleware");
 const { fetchAccountDetails } = require("../controller/payment.controller");
 const { placeOrder, fetchUserOrder } = require("../controller/order.controller");
 const { getAdmin, fetchAdminMessages } = require("../controller/message.controller");
 const router = express.Router();
+
+const orderUpload = uploadFile("orders");
 
 router.post("/signup", signup);
 router.post("/login", login);

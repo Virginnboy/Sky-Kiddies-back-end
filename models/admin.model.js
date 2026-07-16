@@ -3,7 +3,12 @@ const bcrypt = require("bcrypt")
 
 const adminSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { 
+    type: String, 
+    required: true, 
+    select: false,
+    minlength: [8, "Password must be at least 8 characters"]
+  },
   firstName: { type: String, required: true},
   role: {type: String, default: "admin"},
   resetPasswordToken: {type: String },
@@ -11,14 +16,14 @@ const adminSchema = new mongoose.Schema({
 })
 
 adminSchema.pre("save", async function() {
-  if (!this.isModified("password")) 
-    return;
   try {
-    const hashedPassword = await bcrypt.hash(this.password, 10)
-    this.password = hashedPassword
+    if (!this.isModified("password")) return
+
+    const hashedPassword = await bcrypt.hash(this.password, 12);
+    this.password = hashedPassword;
   } catch (err) {
     console.error(err)
-    throw err 
+    throw err
   }
 })
 

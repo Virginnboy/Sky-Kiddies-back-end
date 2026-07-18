@@ -122,8 +122,8 @@ const {email} = req.body
 
   await user.save();
   
-  const userUrl = process.env.USER_URL
-  const resetLink = `${userUrl}/reset-password/${resetToken}`
+  const USER_URL = process.env.USER_URL
+  const resetLink = `${USER_URL}/reset-password/${resetToken}`
 
   try {
     await sendEmail({

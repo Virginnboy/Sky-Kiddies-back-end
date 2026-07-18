@@ -5,7 +5,7 @@ const globalErrorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || "error";
 
-  // Validation Error
+  // VALIDATION ERROR
   if (err.name === "ValidationError") {
     const message = Object.values(err.errors).map(el => el.message).join(". ");
     console.log(message);
@@ -13,6 +13,21 @@ const globalErrorHandler = (err, req, res, next) => {
     err.status = "fail";
     err.statusCode = 400;
     err.message = message;
+  }
+
+  // TOKEN ERRORS
+  // 1) Token expired error
+  if (err.name === "TokenEpiredError") {
+    err.statusCode = 401;
+    err.status = "fail";
+    err.message = "Token expired. Please login again.";
+  }
+
+  // 2)Json WebToken Error
+  if (err.name === "JsonWebTokenError") {
+    err.statusCode = 401;
+    err.status = "fail";
+    err.message = "Invalid token. Please log in again."
   }
 
   if (process.env.NODE_ENV === "production" && !err.isOperational) {

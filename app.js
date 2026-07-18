@@ -50,6 +50,7 @@ app.use("/cart", cartRoutes);
 // Ivalid Routes Middleware Handler
 app.use((req, res, next)=> {
   const err = new AppError(`Cant find ${req.originalUrl} on this server`, 404);
+  console.log(err);
 
   next(err);
 });

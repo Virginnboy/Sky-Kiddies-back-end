@@ -1,13 +1,14 @@
 const { adminModel } = require("../models/admin.model");
-const jwt = require("jsonwebtoken")
+const catchAsync = require("../utils/catchAsync");
+const AppError = require("../errors/AppError");
+const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-const protectAdmin = async (req, res, next) => {
-  try {
+const protectAdmin = catchAsync(async (req, res, next) => {
     const token = req.cookies?.adminToken || req.headers.authorization?.split(" ")[1];
 
     if (!token) {
-      return res.status(401).json({message: "Admin not authenticated"});
+      return next(new AppError("Admin authentication required", 401));
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -15,16 +16,11 @@ const protectAdmin = async (req, res, next) => {
     const admin = await adminModel.findById(decoded.id);
 
     if (!admin) {
-      return res.status(401).json({message: "Admin not found" });
+      return next(new AppError("Invalid or expired authentication session", 401));
     }
 
     req.user = admin;
     next();
+});
 
-  }catch (err) {
-    console.log(err);
-    return res.status(500).json({message: "Server error"});
-  }
-};
-
-module.exports = protectAdmin
+module.exports = protectAdmin;

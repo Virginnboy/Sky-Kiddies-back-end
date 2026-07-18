@@ -47,6 +47,7 @@ const socketSetup = (io) => {
 
 // SEND NEW MESSAGE
     socket.on("send_message", async (data) => {
+      console.log(data);
       try {
         const senderId = socket.user.id;
         const receiverId = data.receiver

@@ -1,15 +1,16 @@
 const { userModel } = require("../models/user.model");
+const catchAsync = require("../utils/catchAsync");
+const AppError = require("../errors/AppError");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 
-const protectUser = async (req, res, next) => {
-  try {
+const protectUser = catchAsync(async (req, res, next) => {
     const token = 
     req.cookies?.userToken || 
     (req.headers.authorization && req.headers.authorization?.split(" ")[1]);
 
     if (!token) {
-      return res.status(401).json({message: "User not authenticated"});
+      return next(new AppError("User authentication required", 401));
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -17,24 +18,12 @@ const protectUser = async (req, res, next) => {
     const user = await userModel.findById(decoded.id);
 
     if (!user) {
-      return res.status(401).json("User not found");
+      return next(new AppError("Invalid or expired authentication session", 401));
     }
 
     req.user = user;
 
-    next()
-  }catch (err) {
-    console.log(err);
+    next();
+});
 
-    if (err.name === "TokenExpiredError") {
-      return res.status(401).json({message: "Token Expired"})
-    } 
-
-    if ( err.name === "JsonWebTokenError" ) {
-      return res.status(401).json({message: "Invalid token"})
-    }
-    return res.status(500).json({message: "Server error"});
-  }
-}
-
-module.exports = protectUser
+module.exports = protectUser;

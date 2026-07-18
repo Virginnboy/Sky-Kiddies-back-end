@@ -107,7 +107,7 @@ const forgotPassword = catchAsync(async (req, res, next) => {
   await admin.save();
 
   // 4️⃣ Create reset link
-  const adminUrl = process.env.ADMIN_URL || "http://localhost:5173";
+  const adminUrl = process.env.ADMIN_URL
   const resetLink = `${adminUrl}/reset-password/${resetToken}`;
 
   // Send email

@@ -122,7 +122,7 @@ const {email} = req.body
 
   await user.save();
   
-  const userUrl = process.env.USER_URL 
+  const userUrl = process.env.USER_URL
   const resetLink = `${userUrl}/reset-password/${resetToken}`
 
   try {

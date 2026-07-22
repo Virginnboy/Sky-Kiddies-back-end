@@ -10,6 +10,12 @@ The backend was built using Node.js, Express, and MongoDB with a focus on secure
 
 ---
 
+## Purpose
+
+This backend powers the Sky Kiddies e-commerce platform by providing secure APIs for authentication, product management, shopping cart operations, order processing, and real-time communication between customers and administrators.
+
+---
+
 ## Features
 
 - User registration and login
@@ -60,8 +66,13 @@ app.js
 
 ---
 ## Environment Variables
+
 Create a `.env` file and add the following variables:
-```
+
+```env
+ADMIN_URL=
+USER_URL=
+
 PORT=
 MONGO_URI=
 NODE_ENV=
@@ -78,12 +89,13 @@ CLOUDINARY_API_KEY=
 CLOUDINARY_API_SECRET=
 
 RESEND_API_KEY=
+```
 ---
 ## Installation
 Clone the repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Virginnboy/Sky-Kiddies-back-end.git
 ```
 
 Install dependencies
@@ -97,7 +109,6 @@ Start the server
 ```bash
 npm run dev
 ```
-
 ---
 
 ## API Features
